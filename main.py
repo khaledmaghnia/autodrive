@@ -12,7 +12,7 @@ from helpers import birdseye
 from applications.yolo import YOLO
 
 class Pipeline():
-	def __init__(self, views = ['default'], use_tiny=False, download_file=False):
+	def __init__(self, views = ['default'], use_tiny=False, download_file=False, use_cuda = False):
 		self.calibrator = Calibrator('camera_cal', 8, 6)
 		self.calibrator.load_camera_matrices('files/cmtx.npy', 'files/dmtx.npy')
 		# self.calibrator.calibrate()
@@ -22,7 +22,7 @@ class Pipeline():
 
 		self.lane_detector = LaneDetector()
 
-		self.object_detector = YOLO(use_tiny, download_file)
+		self.object_detector = YOLO(use_tiny, download_file, use_cuda=use_cuda)
 
 	def get_view(self, key):
 		view_map = {
@@ -130,10 +130,13 @@ if __name__=='__main__':
 	ap.add_argument('-t', action='store_true', required=False, help='Use tiny yolo model')
 	ap.add_argument('--input', required=False, type=str, help='Input video for the autodrive model')
 	ap.add_argument('--output', required=False, type=str, help='Name of output video to store the output of autodrive model')
+	ap.add_argument('-g', required=False, type=str, help='Add gpu support to perform object detection')
 	args = vars(ap.parse_args())
 
 	#whether to use yolo tiny model or not
 	use_tiny = args['t']
+	use_cuda = args['gpu']
+
 	if args['input'] is not None:
 		input_video = args['input'].strip("'")
 	if args['output'] is not None:
@@ -149,7 +152,7 @@ if __name__=='__main__':
 			download_file = False
 
 
-	pipeline = Pipeline(views=['thresh', 'warped'], use_tiny=use_tiny, download_file=download_file)
+	pipeline = Pipeline(views=['thresh', 'warped'], use_tiny=use_tiny, download_file=download_file, use_cuda=use_cuda)
 
 	#run the pipeline on a single image
 	# pipeline.run_image()

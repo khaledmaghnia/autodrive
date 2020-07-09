@@ -5,7 +5,7 @@ import cv2
 
 
 class YoloLayer(nn.Module):
-    def __init__(self, anchor_mask=[], num_classes=0, anchors=[], num_anchors=1):
+    def __init__(self, anchor_mask=[], num_classes=0, anchors=[], num_anchors=1, use_cuda):
         super(YoloLayer, self).__init__()
         self.anchor_mask = anchor_mask
         self.num_classes = num_classes
@@ -19,6 +19,7 @@ class YoloLayer(nn.Module):
         self.thresh = 0.6
         self.stride = 32
         self.seen = 0
+        self.use_cuda = use_cuda
 
     def forward(self, output, nms_thresh):
         self.thresh = nms_thresh
@@ -28,7 +29,7 @@ class YoloLayer(nn.Module):
             masked_anchors += self.anchors[m*self.anchor_step:(m+1)*self.anchor_step]
                 
         masked_anchors = [anchor/self.stride for anchor in masked_anchors]
-        boxes = get_region_boxes(output.data, self.thresh, self.num_classes, masked_anchors, len(self.anchor_mask))
+        boxes = get_region_boxes(output.data, self.thresh, self.num_classes, masked_anchors, len(self.anchor_mask), self.use_cuda)
             
         return boxes
 
@@ -60,7 +61,7 @@ class EmptyModule(nn.Module):
 
 # support route shortcut
 class Darknet(nn.Module):
-    def __init__(self, cfgfile):
+    def __init__(self, cfgfile, use_cuda):
         super(Darknet, self).__init__()
         self.blocks = parse_cfg(cfgfile)
         self.models = self.create_network(self.blocks) # merge conv, bn,leaky
@@ -71,6 +72,10 @@ class Darknet(nn.Module):
 
         self.header = torch.IntTensor([0,0,0,0])
         self.seen = 0
+        self.use_cuda = use_cuda
+        self.device = torch.device('cpu')
+        if self.use_cuda:
+            self.device = torch.device('cuda')
 
     def forward(self, x, nms_thresh):            
         ind = -2
@@ -83,7 +88,7 @@ class Darknet(nn.Module):
             if block['type'] == 'net':
                 continue
             elif block['type'] in ['convolutional', 'upsample']: 
-                x = self.models[ind](x)
+                x = self.models[ind](x.to(self.device))
                 outputs[ind] = x
             elif block['type'] == 'route':
                 layers = block['layers'].split(',')
@@ -149,13 +154,13 @@ class Darknet(nn.Module):
                 out_filters.append(prev_filters)
                 prev_stride = stride * prev_stride
                 out_strides.append(prev_stride)
-                models.append(model)
+                models.append(model.to(self.device))
             elif block['type'] == 'upsample':
                 stride = int(block['stride'])
                 out_filters.append(prev_filters)
                 prev_stride = prev_stride // stride
                 out_strides.append(prev_stride)
-                models.append(Upsample(stride))
+                models.append(Upsample(stride).to(self.device))
             elif block['type'] == 'route':
                 layers = block['layers'].split(',')
                 ind = len(models)
@@ -169,16 +174,16 @@ class Darknet(nn.Module):
                     prev_stride = out_strides[layers[0]]
                 out_filters.append(prev_filters)
                 out_strides.append(prev_stride)
-                models.append(EmptyModule())
+                models.append(EmptyModule().to(self.device))
             elif block['type'] == 'shortcut':
                 ind = len(models)
                 prev_filters = out_filters[ind-1]
                 out_filters.append(prev_filters)
                 prev_stride = out_strides[ind-1]
                 out_strides.append(prev_stride)
-                models.append(EmptyModule())
+                models.append(EmptyModule().to(self.device))
             elif block['type'] == 'yolo':
-                yolo_layer = YoloLayer()
+                yolo_layer = YoloLayer(self.use_cuda)
                 anchors = block['anchors'].split(',')
                 anchor_mask = block['mask'].split(',')
                 yolo_layer.anchor_mask = [int(i) for i in anchor_mask]
@@ -189,7 +194,7 @@ class Darknet(nn.Module):
                 yolo_layer.stride = prev_stride
                 out_filters.append(prev_filters)
                 out_strides.append(prev_stride)
-                models.append(yolo_layer)
+                models.append(yolo_layer.to(self.self.device))
             else:
                 print('unknown type %s' % (block['type']))
     
@@ -247,7 +252,11 @@ def convert2cpu_long(gpu_matrix):
     return torch.LongTensor(gpu_matrix.size()).copy_(gpu_matrix)
 
 
-def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, only_objectness = 1, validation = False):
+def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, only_objectness = 1, validation = False, use_cuda):
+    device = torch.device('cpu')
+    if use_cuda:
+        device = torch.device('cuda')
+
     anchor_step = len(anchors)//num_anchors
     if output.dim() == 3:
         output = output.unsqueeze(0)
@@ -259,15 +268,15 @@ def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, onl
     all_boxes = []
     output = output.view(batch*num_anchors, 5+num_classes, h*w).transpose(0,1).contiguous().view(5+num_classes, batch*num_anchors*h*w)
 
-    grid_x = torch.linspace(0, w-1, w).repeat(h,1).repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).type_as(output) #cuda()
-    grid_y = torch.linspace(0, h-1, h).repeat(w,1).t().repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).type_as(output) #cuda()
+    grid_x = torch.linspace(0, w-1, w).repeat(h,1).repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).type_as(output).to(device)
+    grid_y = torch.linspace(0, h-1, h).repeat(w,1).t().repeat(batch*num_anchors, 1, 1).view(batch*num_anchors*h*w).type_as(output).to(device)
     xs = torch.sigmoid(output[0]) + grid_x
     ys = torch.sigmoid(output[1]) + grid_y
 
     anchor_w = torch.Tensor(anchors).view(num_anchors, anchor_step).index_select(1, torch.LongTensor([0]))
     anchor_h = torch.Tensor(anchors).view(num_anchors, anchor_step).index_select(1, torch.LongTensor([1]))
-    anchor_w = anchor_w.repeat(batch, 1).repeat(1, 1, h*w).view(batch*num_anchors*h*w).type_as(output) #cuda()
-    anchor_h = anchor_h.repeat(batch, 1).repeat(1, 1, h*w).view(batch*num_anchors*h*w).type_as(output) #cuda()
+    anchor_w = anchor_w.repeat(batch, 1).repeat(1, 1, h*w).view(batch*num_anchors*h*w).type_as(output.to(device)
+    anchor_h = anchor_h.repeat(batch, 1).repeat(1, 1, h*w).view(batch*num_anchors*h*w).type_as(output).to(device)
     ws = torch.exp(output[2]) * anchor_w
     hs = torch.exp(output[3]) * anchor_h
 

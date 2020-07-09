@@ -1,11 +1,16 @@
 import cv2
+import torch
 
 from applications.yolo.darknet import Darknet
 from applications.yolo.utils import *
 from helpers.download_weights import download
 
 class YOLO():
-	def __init__(self, use_tiny=False, download_file=False):
+	def __init__(self, use_tiny=False, download_file=False, use_cuda=False):
+
+		device = torch.device('cpu')
+		if use_cuda:
+			device = torch.device('cuda')
 
 		if use_tiny:
 			cfg_file = 'files/yolov3-tiny.cfg'
@@ -24,7 +29,7 @@ class YOLO():
 		namesfile = 'files/coco'
 
 		# Load the network architecture
-		self.m = Darknet(cfg_file)
+		self.m = Darknet(cfg_file, use_cuda).to(device)
 
 		# Load the pre-trained weights
 		self.m.load_weights(weight_file)
