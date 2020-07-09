@@ -27,6 +27,21 @@ python main.py --output {a file name.mkv}
 ```
 NOTE: The output video file's extension must be ``` .mkv```.
 
+## New Features
+* Added GPU support to run object detection using cuda support for getting higher FPS
+###Usage:
+```
+	python main.py -g  # -g for GPU
+```
+   	NOTE: The -g inclusion while running the model will allow the model to use GPU for faster inference and higher FPS
+
+* Added support for using TINY YOLO Model to perform even more faster detection with smaller model.
+###Usage:
+```
+	python main.py -t  # -t for TINY
+```
+   	NOTE: The -t inclusion while running the model will tell the model to use TINY Yolo model for running object detection.
+
 ## Extra features of the model
 You can also make changes inside the code to add more features in the models' output.Like:
 
