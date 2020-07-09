@@ -135,7 +135,7 @@ if __name__=='__main__':
 
 	#whether to use yolo tiny model or not
 	use_tiny = args['t']
-	use_cuda = args['gpu']
+	use_cuda = args['g']
 
 	if args['input'] is not None:
 		input_video = args['input'].strip("'")

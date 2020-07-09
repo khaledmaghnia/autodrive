@@ -5,7 +5,7 @@ import cv2
 
 
 class YoloLayer(nn.Module):
-    def __init__(self, anchor_mask=[], num_classes=0, anchors=[], num_anchors=1, use_cuda):
+    def __init__(self, anchor_mask=[], num_classes=0, anchors=[], num_anchors=1, use_cuda=False):
         super(YoloLayer, self).__init__()
         self.anchor_mask = anchor_mask
         self.num_classes = num_classes
@@ -252,7 +252,7 @@ def convert2cpu_long(gpu_matrix):
     return torch.LongTensor(gpu_matrix.size()).copy_(gpu_matrix)
 
 
-def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, only_objectness = 1, validation = False, use_cuda):
+def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, only_objectness = 1, validation = False, use_cuda=False):
     device = torch.device('cpu')
     if use_cuda:
         device = torch.device('cuda')
