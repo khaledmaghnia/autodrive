@@ -5,7 +5,7 @@ import cv2
 
 
 class YoloLayer(nn.Module):
-    def __init__(self, anchor_mask=[], num_classes=0, anchors=[], num_anchors=1, use_cuda=False):
+    def __init__(self, anchor_mask=[], num_classes=0, anchors=[], num_anchors=1):
         super(YoloLayer, self).__init__()
         self.anchor_mask = anchor_mask
         self.num_classes = num_classes
@@ -19,7 +19,6 @@ class YoloLayer(nn.Module):
         self.thresh = 0.6
         self.stride = 32
         self.seen = 0
-        self.use_cuda = use_cuda
 
     def forward(self, output, nms_thresh):
         self.thresh = nms_thresh
@@ -29,9 +28,16 @@ class YoloLayer(nn.Module):
             masked_anchors += self.anchors[m*self.anchor_step:(m+1)*self.anchor_step]
                 
         masked_anchors = [anchor/self.stride for anchor in masked_anchors]
-        boxes = get_region_boxes(output.data, self.thresh, self.num_classes, masked_anchors, len(self.anchor_mask), self.use_cuda)
+        boxes = get_region_boxes(output.data, self.thresh, self.num_classes, masked_anchors, len(self.anchor_mask), self.use_cuda())
             
         return boxes
+
+    def use_cuda(self):
+        with open('files/config', 'r') as config:
+            data = config.read().strip('\n')
+        if data == 'True':
+            return True
+        return False
 
     
 class Upsample(nn.Module):
@@ -61,7 +67,7 @@ class EmptyModule(nn.Module):
 
 # support route shortcut
 class Darknet(nn.Module):
-    def __init__(self, cfgfile, use_cuda):
+    def __init__(self, cfgfile, use_cuda=False):
         super(Darknet, self).__init__()
         self.blocks = parse_cfg(cfgfile)
         self.models = self.create_network(self.blocks) # merge conv, bn,leaky
@@ -72,9 +78,12 @@ class Darknet(nn.Module):
 
         self.header = torch.IntTensor([0,0,0,0])
         self.seen = 0
-        self.use_cuda = use_cuda
+        
+        with open('files/config', 'w') as config:
+            config.write(str(use_cuda))
+
         self.device = torch.device('cpu')
-        if self.use_cuda:
+        if use_cuda:
             self.device = torch.device('cuda')
 
     def forward(self, x, nms_thresh):            
@@ -154,13 +163,13 @@ class Darknet(nn.Module):
                 out_filters.append(prev_filters)
                 prev_stride = stride * prev_stride
                 out_strides.append(prev_stride)
-                models.append(model.to(self.device))
+                models.append(model)
             elif block['type'] == 'upsample':
                 stride = int(block['stride'])
                 out_filters.append(prev_filters)
                 prev_stride = prev_stride // stride
                 out_strides.append(prev_stride)
-                models.append(Upsample(stride).to(self.device))
+                models.append(Upsample(stride))
             elif block['type'] == 'route':
                 layers = block['layers'].split(',')
                 ind = len(models)
@@ -174,16 +183,16 @@ class Darknet(nn.Module):
                     prev_stride = out_strides[layers[0]]
                 out_filters.append(prev_filters)
                 out_strides.append(prev_stride)
-                models.append(EmptyModule().to(self.device))
+                models.append(EmptyModule())
             elif block['type'] == 'shortcut':
                 ind = len(models)
                 prev_filters = out_filters[ind-1]
                 out_filters.append(prev_filters)
                 prev_stride = out_strides[ind-1]
                 out_strides.append(prev_stride)
-                models.append(EmptyModule().to(self.device))
+                models.append(EmptyModule())
             elif block['type'] == 'yolo':
-                yolo_layer = YoloLayer(self.use_cuda)
+                yolo_layer = YoloLayer()
                 anchors = block['anchors'].split(',')
                 anchor_mask = block['mask'].split(',')
                 yolo_layer.anchor_mask = [int(i) for i in anchor_mask]
@@ -194,7 +203,7 @@ class Darknet(nn.Module):
                 yolo_layer.stride = prev_stride
                 out_filters.append(prev_filters)
                 out_strides.append(prev_stride)
-                models.append(yolo_layer.to(self.self.device))
+                models.append(yolo_layer)
             else:
                 print('unknown type %s' % (block['type']))
     

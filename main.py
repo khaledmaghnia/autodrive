@@ -130,7 +130,7 @@ if __name__=='__main__':
 	ap.add_argument('-t', action='store_true', required=False, help='Use tiny yolo model')
 	ap.add_argument('--input', required=False, type=str, help='Input video for the autodrive model')
 	ap.add_argument('--output', required=False, type=str, help='Name of output video to store the output of autodrive model')
-	ap.add_argument('-g', required=False, type=str, help='Add gpu support to perform object detection')
+	ap.add_argument('-g', required=False, action='store_true', help='Add gpu support to perform object detection')
 	args = vars(ap.parse_args())
 
 	#whether to use yolo tiny model or not
