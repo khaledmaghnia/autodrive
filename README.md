@@ -68,3 +68,5 @@ You can also make changes inside the code to add more features in the models' ou
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+
+[![Kofi](https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/b5278db5-d08d-44ae-8a27-e3a827c411c3/dcgc1gs-0e20e8ea-65aa-4224-b802-18d4346b8efe.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOiIsImlzcyI6InVybjphcHA6Iiwib2JqIjpbW3sicGF0aCI6IlwvZlwvYjUyNzhkYjUtZDA4ZC00NGFlLThhMjctZTNhODI3YzQxMWMzXC9kY2djMWdzLTBlMjBlOGVhLTY1YWEtNDIyNC1iODAyLTE4ZDQzNDZiOGVmZS5wbmcifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6ZmlsZS5kb3dubG9hZCJdfQ.dzvTPy1MvnZdNJLcv7FGClYdpW9rYptsJGpnzzvL8iQ)](https://ko-fi.com/ajeetkharel)
