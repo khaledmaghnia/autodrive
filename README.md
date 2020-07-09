@@ -1,5 +1,5 @@
 # autodrive
-A small implementation that mimics Tesla's autopilot for Full Self Driving.
+A python implementation for Advanced Driving Assistant. (Now with GPU Support)
 
 ![autodrive output sample](https://github.com/ajeetkharel/autodrive/blob/master/outputs/output_sample.png)
 
@@ -27,6 +27,21 @@ python main.py --output {a file name.mkv}
 ```
 NOTE: The output video file's extension must be ``` .mkv```.
 
+## New Features
+* Added GPU support to run object detection using cuda support for getting higher FPS
+###Usage:
+```
+	python main.py -g  # -g for GPU
+```
+   	NOTE: The -g inclusion while running the model will allow the model to use GPU for faster inference and higher FPS
+
+* Added support for using TINY YOLO Model to perform even more faster detection with smaller model.
+###Usage:
+```
+	python main.py -t  # -t for TINY
+```
+   	NOTE: The -t inclusion while running the model will tell the model to use TINY Yolo model for running object detection.
+
 ## Extra features of the model
 You can also make changes inside the code to add more features in the models' output.Like:
 
@@ -53,3 +68,5 @@ You can also make changes inside the code to add more features in the models' ou
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+
+[![Kofi](https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/b5278db5-d08d-44ae-8a27-e3a827c411c3/dcgc1gs-0e20e8ea-65aa-4224-b802-18d4346b8efe.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOiIsImlzcyI6InVybjphcHA6Iiwib2JqIjpbW3sicGF0aCI6IlwvZlwvYjUyNzhkYjUtZDA4ZC00NGFlLThhMjctZTNhODI3YzQxMWMzXC9kY2djMWdzLTBlMjBlOGVhLTY1YWEtNDIyNC1iODAyLTE4ZDQzNDZiOGVmZS5wbmcifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6ZmlsZS5kb3dubG9hZCJdfQ.dzvTPy1MvnZdNJLcv7FGClYdpW9rYptsJGpnzzvL8iQ)](https://ko-fi.com/ajeetkharel)
