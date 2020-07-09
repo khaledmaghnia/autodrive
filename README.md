@@ -1,5 +1,5 @@
 # autodrive
-A small implementation that mimics Tesla's autopilot for Full Self Driving. (Now with GPU Support)
+A python implementation for Advanced Driving Assistant. (Now with GPU Support)
 
 ![autodrive output sample](https://github.com/ajeetkharel/autodrive/blob/master/outputs/output_sample.png)
 
